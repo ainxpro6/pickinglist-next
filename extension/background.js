@@ -10,7 +10,7 @@ chrome.action.onClicked.addListener((tab) => {
 
   if (isDesty && isPdf) {
     // Retrieve the target app URL from storage (defaults to localhost)
-    chrome.storage.sync.get({ targetUrl: "http://localhost:3000" }, (items) => {
+    chrome.storage.sync.get({ targetUrl: "https://pickinglist-next.vercel.app/" }, (items) => {
       let targetAppUrl = items.targetUrl.trim();
       
       // Ensure target URL doesn't end with a trailing slash
