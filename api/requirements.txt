@@ -1,0 +1,6 @@
+pdfplumber==0.11.5
+pandas
+openpyxl
+requests==2.31.0
+pdfminer.six==20231228
+reportlab
