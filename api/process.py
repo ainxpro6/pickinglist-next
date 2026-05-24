@@ -2,6 +2,12 @@ from http.server import BaseHTTPRequestHandler
 import json
 import cgi
 import io
+import sys
+import os
+
+# Ensure sibling modules (ubah1, ubah2) are importable on Vercel
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import requests as http_requests
 from ubah1 import main as process_pdf
 from ubah2 import main as process_excel
