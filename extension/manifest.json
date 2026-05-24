@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Picking List Desty Auto-Redirect",
+  "version": "1.0.0",
+  "description": "Auto-redirect dan proses file PDF Desty Omni ke Picking List App dalam 1 klik.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://desty-upload-indonesia*",
+    "https://*.aliyuncs.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_icon": "icon.png",
+    "default_title": "Kirim ke Picking List App"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "16": "icon.png",
+    "32": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}

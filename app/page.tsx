@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DropZone from "@/components/DropZone";
 import Footer from "@/components/Footer";
@@ -10,6 +10,7 @@ export default function HomePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [url, setUrl] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [autoProcessing, setAutoProcessing] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [alertType, setAlertType] = useState<"warning" | "danger">("warning");
 
@@ -41,24 +42,17 @@ export default function HomePage() {
     clearAlert();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!selectedFile && url.trim() === "") {
-      showAlert("⚠️ Harap upload file ATAU masukkan link!", "warning");
-      return;
-    }
-
+  const processFileOrUrl = async (file: File | null, pdfUrlString: string) => {
     setIsProcessing(true);
     clearAlert();
 
     try {
       const formData = new FormData();
 
-      if (selectedFile) {
-        formData.append("file", selectedFile);
+      if (file) {
+        formData.append("file", file);
       } else {
-        formData.append("pdf_url", url.trim());
+        formData.append("pdf_url", pdfUrlString.trim());
       }
 
       const response = await fetch("/api/process", {
@@ -82,6 +76,33 @@ export default function HomePage() {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedFile && url.trim() === "") {
+      showAlert("⚠️ Harap upload file ATAU masukkan link!", "warning");
+      return;
+    }
+
+    await processFileOrUrl(selectedFile, url);
+  };
+
+  // Automatically process PDF URL if passed as a query parameter
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const pdfUrl = params.get("pdf_url");
+      if (pdfUrl) {
+        const decodedUrl = decodeURIComponent(pdfUrl).trim();
+        setUrl(decodedUrl);
+        setAutoProcessing(true);
+        processFileOrUrl(null, decodedUrl).finally(() => {
+          setAutoProcessing(false);
+        });
+      }
+    }
+  }, []);
+
   return (
     <div style={{
       minHeight: "100vh",
@@ -91,7 +112,45 @@ export default function HomePage() {
       padding: "1rem",
     }}>
       <div style={{ maxWidth: "600px", width: "100%" }}>
-        <div className="glass-card" style={{ padding: "2.5rem" }}>
+        <div className="glass-card" style={{ padding: "2.5rem", position: "relative", overflow: "hidden" }}>
+          {/* Auto Processing Loader Overlay */}
+          {autoProcessing && (
+            <div style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(255, 255, 255, 0.85)",
+              backdropFilter: "blur(12px)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 50,
+              textAlign: "center",
+              padding: "2rem",
+            }} className="dark:bg-slate-900/90">
+              <div className="spinner" style={{ width: "3.5rem", height: "3.5rem", borderWidth: "4px", marginBottom: "1.5rem" }}></div>
+              <h2 style={{
+                fontFamily: "var(--font-heading)",
+                fontWeight: 600,
+                fontSize: "1.25rem",
+                color: "var(--color-primary-600)",
+                marginBottom: "0.5rem"
+              }}>
+                Memproses PDF Desty
+              </h2>
+              <p style={{
+                fontSize: "0.95rem",
+                color: "var(--color-text-secondary)",
+                maxWidth: "280px",
+                lineHeight: "1.4"
+              }}>
+                Mengunduh dan mengubah file dari Desty Omni secara otomatis...
+              </p>
+            </div>
+          )}
           {/* Header */}
           <h1 style={{
             textAlign: "center",

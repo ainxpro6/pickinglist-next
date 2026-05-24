@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pengaturan - Picking List Desty</title>
+  <style>
+    /* Premium Modern Dark Mode CSS */
+    :root {
+      --color-primary: #6366f1; /* Indigo */
+      --color-primary-hover: #4f46e5;
+      --color-primary-glow: rgba(99, 102, 241, 0.15);
+      --color-bg-dark: #0b0f19;
+      --color-card-bg: rgba(17, 24, 39, 0.7);
+      --color-card-border: rgba(255, 255, 255, 0.08);
+      --color-text-primary: #f3f4f6;
+      --color-text-secondary: #9ca3af;
+      --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--color-bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.08) 0px, transparent 50%);
+      background-attachment: fixed;
+      font-family: var(--font-family);
+      color: var(--color-text-primary);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .container {
+      max-width: 500px;
+      width: 100%;
+      animation: fadeInSlideUp 0.6s ease-out;
+    }
+
+    .card {
+      background: var(--color-card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--color-card-border);
+      border-radius: 1.25rem;
+      padding: 2.25rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .logo-icon {
+      background: linear-gradient(135deg, var(--color-primary), #a855f7);
+      width: 40px;
+      height: 40px;
+      border-radius: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px var(--color-primary-glow);
+    }
+
+    .logo-icon svg {
+      color: white;
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      background: linear-gradient(to right, #f3f4f6, #9ca3af);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .description {
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+      margin-bottom: 2rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    input[type="url"] {
+      width: 100%;
+      background: rgba(17, 24, 39, 0.6);
+      border: 1px solid var(--color-card-border);
+      border-radius: 0.75rem;
+      padding: 0.85rem 1rem;
+      font-size: 0.95rem;
+      color: var(--color-text-primary);
+      transition: all 0.3s ease;
+      outline: none;
+    }
+
+    input[type="url"]:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 4px var(--color-primary-glow);
+      background: rgba(17, 24, 39, 0.8);
+    }
+
+    .help-text {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      margin-top: 0.5rem;
+      line-height: 1.4;
+    }
+
+    .btn-save {
+      width: 100%;
+      background: linear-gradient(135deg, var(--color-primary), #4f46e5);
+      border: none;
+      border-radius: 0.75rem;
+      color: white;
+      padding: 0.9rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    }
+
+    .btn-save:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
+    }
+
+    .btn-save:active {
+      transform: translateY(0);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(16, 185, 129, 0.9); /* Emerald Green */
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: white;
+      padding: 0.85rem 2rem;
+      border-radius: 50px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 100;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Instructions Section */
+    .instructions {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--color-card-border);
+    }
+
+    .instructions-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .instructions-list {
+      list-style-type: none;
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+    }
+
+    .instructions-list li {
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      line-height: 1.4;
+    }
+
+    .instructions-list li::before {
+      content: "•";
+      color: var(--color-primary);
+      font-weight: bold;
+    }
+
+    @keyframes fadeInSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="card">
+      
+      <!-- Header -->
+      <div class="header">
+        <div class="logo-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="12" y1="18" x2="12" y2="12" />
+            <polyline points="9 15 12 12 15 15" />
+          </svg>
+        </div>
+        <h1>Picking List Desty</h1>
+      </div>
+
+      <p class="description">
+        Tentukan alamat web Picking List App Anda di bawah ini agar file PDF Desty Omni otomatis diproses saat Anda mengklik ikon ekstensi.
+      </p>
+
+      <!-- Settings Form -->
+      <form id="settings-form">
+        <div class="form-group">
+          <label for="target-url">URL Web App</label>
+          <div class="input-wrapper">
+            <input 
+              type="url" 
+              id="target-url" 
+              placeholder="http://localhost:3000" 
+              required
+              autocomplete="off"
+            >
+          </div>
+          <p class="help-text">
+            Default: <code>http://localhost:3000</code>. Jika sudah dideploy di Vercel, ganti dengan URL Vercel Anda (misalnya: <code>https://pickinglist-next.vercel.app</code>).
+          </p>
+        </div>
+
+        <button type="submit" class="btn-save">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <polyline points="17 21 17 13 7 13 7 21" />
+            <polyline points="7 3 7 8 15 8" />
+          </svg>
+          Simpan Pengaturan
+        </button>
+      </form>
+
+      <!-- Instructions -->
+      <div class="instructions">
+        <h2 class="instructions-title">Cara Penggunaan</h2>
+        <ul class="instructions-list">
+          <li>Buka halaman PDF Picking List di Desty Omni (link diawali dengan <code>https://desty-upload-indonesia</code>).</li>
+          <li>Klik ikon ekstensi ini pada browser Anda.</li>
+          <li>Tab baru akan otomatis terbuka di sebelah kanan tab Anda saat ini, langsung mengunduh dan menyajikan tabel print preview!</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Success Toast -->
+  <div id="toast" class="toast">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+    Pengaturan Berhasil Disimpan!
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
