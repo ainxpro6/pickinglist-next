@@ -19,8 +19,12 @@ export default function ControlBar({ title = "Hasil Preview" }: ControlBarProps)
     try {
       // Dynamically import jsPDF + autotable to prevent SSR issues
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { jsPDF } = await import("jspdf") as any;
-      await import("jspdf-autotable");
+      const jsPDFModule = await import("jspdf") as any;
+      const jsPDF = jsPDFModule.default || jsPDFModule.jsPDF;
+      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const autoTableModule = await import("jspdf-autotable") as any;
+      const autoTable = autoTableModule.default || autoTableModule.autoTable;
 
       const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
@@ -41,8 +45,7 @@ export default function ControlBar({ title = "Hasil Preview" }: ControlBarProps)
         pageWidth * 0.10,  // Qty
       ];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (doc as any).autoTable({
+      autoTable(doc, {
         head: [headers],
         body: bodyData,
         startY: 5,
