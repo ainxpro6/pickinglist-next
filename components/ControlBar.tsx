@@ -13,37 +13,77 @@ export default function ControlBar({ title = "Hasil Preview" }: ControlBarProps)
   const rows = usePickingListStore((s) => s.rows);
 
   const handleDownloadPDF = async () => {
-    if (isExporting) return;
+    if (isExporting || rows.length === 0) return;
     setIsExporting(true);
 
     try {
-      // Dynamically import html2pdf.js to prevent SSR issues
+      // Dynamically import jsPDF + autotable to prevent SSR issues
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const html2pdf = (await import("html2pdf.js" as any)).default as any;
-      const element = document.querySelector(".paper") as HTMLElement;
-      if (!element) return;
+      const { jsPDF } = await import("jspdf") as any;
+      await import("jspdf-autotable");
 
-      // Temporarily remove padding so html2canvas captures at full A4 width
-      const originalPadding = element.style.padding;
-      element.style.padding = "0";
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-      const opt = {
-        margin: [3, 3, 3, 3],
-        filename: "picking_list.pdf",
-        image: { type: "jpeg", quality: 1.0 },
-        html2canvas: {
-          scale: 3,
-          useCORS: true,
-          scrollY: -window.scrollY,
-          windowWidth: element.scrollWidth,
-          letterRendering: true,
+      const headers = ["NAMA PRODUK", "VARIAN", "SKU", "QTY"];
+      const bodyData = rows.map((row) => [
+        row["Nama Produk"] || row["Nama produk"] || "",
+        row["Varian"] || row["Nama varian"] || "-",
+        row["SKU"] || "",
+        String(row["Qty"] ?? ""),
+      ]);
+
+      // A4 width = 210mm, margins 5mm each side = 200mm usable
+      const pageWidth = 200;
+      const colWidths = [
+        pageWidth * 0.50,  // Nama Produk
+        pageWidth * 0.20,  // Varian
+        pageWidth * 0.20,  // SKU
+        pageWidth * 0.10,  // Qty
+      ];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (doc as any).autoTable({
+        head: [headers],
+        body: bodyData,
+        startY: 5,
+        margin: { left: 5, right: 5, top: 5, bottom: 5 },
+        tableWidth: pageWidth,
+        columnStyles: {
+          0: { cellWidth: colWidths[0], fontSize: 9, font: "helvetica" },
+          1: { cellWidth: colWidths[1], fontSize: 10, font: "helvetica" },
+          2: { cellWidth: colWidths[2], fontSize: 9, font: "helvetica" },
+          3: { cellWidth: colWidths[3], fontSize: 14, font: "courier", fontStyle: "bold", halign: "center" },
         },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        pagebreak: { mode: ["css", "legacy"] },
-      };
+        headStyles: {
+          fillColor: [241, 245, 249],
+          textColor: [15, 23, 42],
+          fontStyle: "bold",
+          fontSize: 9,
+          halign: "center",
+          valign: "middle",
+          lineWidth: 0.3,
+          lineColor: [0, 0, 0],
+          cellPadding: 2,
+        },
+        bodyStyles: {
+          textColor: [0, 0, 0],
+          lineWidth: 0.3,
+          lineColor: [0, 0, 0],
+          cellPadding: { top: 1.5, right: 2, bottom: 1.5, left: 2 },
+          valign: "middle",
+          fontSize: 9,
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252],
+        },
+        styles: {
+          overflow: "linebreak",
+          cellWidth: "wrap",
+        },
+        theme: "grid",
+      });
 
-      await html2pdf().set(opt).from(element).save();
-      element.style.padding = originalPadding;
+      doc.save("picking_list.pdf");
     } catch (err) {
       console.error("PDF export failed:", err);
     } finally {
