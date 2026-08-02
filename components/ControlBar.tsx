@@ -23,16 +23,27 @@ export default function ControlBar({ title = "Hasil Preview" }: ControlBarProps)
       const element = document.querySelector(".paper") as HTMLElement;
       if (!element) return;
 
+      // Temporarily remove padding so html2canvas captures at full A4 width
+      const originalPadding = element.style.padding;
+      element.style.padding = "0";
+
       const opt = {
-        margin: [5, 5, 5, 5],
+        margin: [3, 3, 3, 3],
         filename: "picking_list.pdf",
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        image: { type: "jpeg", quality: 1.0 },
+        html2canvas: {
+          scale: 3,
+          useCORS: true,
+          scrollY: -window.scrollY,
+          windowWidth: element.scrollWidth,
+          letterRendering: true,
+        },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+        pagebreak: { mode: ["css", "legacy"] },
       };
 
       await html2pdf().set(opt).from(element).save();
+      element.style.padding = originalPadding;
     } catch (err) {
       console.error("PDF export failed:", err);
     } finally {
