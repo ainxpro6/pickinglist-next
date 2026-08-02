@@ -1,12 +1,45 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { usePickingListStore } from "@/lib/store";
 
 interface ControlBarProps {
   title?: string;
 }
 
 export default function ControlBar({ title = "Hasil Preview" }: ControlBarProps) {
+  const [isExporting, setIsExporting] = useState(false);
+  const rows = usePickingListStore((s) => s.rows);
+
+  const handleDownloadPDF = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+
+    try {
+      // Dynamically import html2pdf.js to prevent SSR issues
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const html2pdf = (await import("html2pdf.js" as any)).default as any;
+      const element = document.querySelector(".paper") as HTMLElement;
+      if (!element) return;
+
+      const opt = {
+        margin: [5, 5, 5, 5],
+        filename: "picking_list.pdf",
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+      };
+
+      await html2pdf().set(opt).from(element).save();
+    } catch (err) {
+      console.error("PDF export failed:", err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="glass-bar no-print" style={{
       maxWidth: "210mm",
@@ -33,6 +66,7 @@ export default function ControlBar({ title = "Hasil Preview" }: ControlBarProps)
         </svg>
         {title}
       </div>
+
       <div style={{ display: "flex", gap: "0.5rem" }}>
         <Link href="/" className="btn-secondary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -41,13 +75,71 @@ export default function ControlBar({ title = "Hasil Preview" }: ControlBarProps)
           </svg>
           Upload Ulang
         </Link>
-        <button onClick={() => window.print()} className="btn-primary" style={{ width: "auto", padding: "0.5rem 1.25rem" }}>
+
+        <button
+          onClick={() => window.print()}
+          className="btn-primary"
+          style={{ width: "auto", padding: "0.5rem 1.25rem" }}
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6 9 6 2 18 2 18 9" />
             <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
             <rect x="6" y="14" width="12" height="8" />
           </svg>
           Cetak
+        </button>
+
+        <button
+          onClick={handleDownloadPDF}
+          disabled={isExporting || rows.length === 0}
+          style={{
+            width: "auto",
+            padding: "0.5rem 1.25rem",
+            background: isExporting
+              ? "linear-gradient(135deg, #6ee7b7, #34d399)"
+              : "linear-gradient(135deg, #10b981, #059669)",
+            color: "#fff",
+            border: "none",
+            borderRadius: "10px",
+            fontWeight: 500,
+            fontSize: "0.9rem",
+            cursor: isExporting ? "not-allowed" : "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            opacity: isExporting ? 0.8 : 1,
+            transition: "all 0.2s",
+            boxShadow: "0 4px 10px rgba(16, 185, 129, 0.3)",
+            fontFamily: "var(--font-body)",
+          }}
+        >
+          {isExporting ? (
+            <>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ animation: "spin 1s linear infinite" }}
+              >
+                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+              </svg>
+              Mengunduh...
+            </>
+          ) : (
+            <>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Download PDF
+            </>
+          )}
         </button>
       </div>
     </div>
