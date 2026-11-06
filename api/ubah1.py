@@ -54,12 +54,24 @@ def extract_and_process_pdf(pdf_path):
             boundaries = get_column_boundaries(page, fallback_boundaries=last_boundaries)
             last_boundaries = boundaries
 
+            words = page.extract_words()
             h_lines = sorted(set([edge["top"] for edge in page.horizontal_edges] + [0, page.height]))
 
             for top, bottom in zip(h_lines[:-1], h_lines[1:]):
+                # Detect buyer notes within this row to prevent full-width notes
+                # from spilling across columns (SKU, Location, Qty)
+                row_words = [w for w in words if top <= w['top'] < bottom]
+                bn_tops = [
+                    w['top'] for i, w in enumerate(row_words)
+                    if (w['text'].lower() == 'buyer' and i + 1 < len(row_words) and 'note' in row_words[i+1]['text'].lower())
+                    or (w['text'].lower() == 'catatan' and i + 1 < len(row_words) and 'pembeli' in row_words[i+1]['text'].lower())
+                ]
+
+                effective_bottom = min(bn_tops) - 1 if bn_tops else bottom
+
                 row_data = []
                 for x0, x1 in boundaries:
-                    cell_crop = page.crop((x0, top, x1, bottom))
+                    cell_crop = page.crop((x0, top, x1, effective_bottom))
                     text = cell_crop.extract_text(x_tolerance=2, y_tolerance=2)
                     row_data.append(text.strip() if text else "")
                 if any(row_data):
@@ -123,6 +135,10 @@ def clean_data(df_raw):
                     current["Varian"] = extracted_varian
                 current["Nama Produk"] = re.sub(regex_varian, "", current["Nama Produk"]).strip()
 
+            # Clean any buyer notes if somehow leaked into SKU
+            if re.search(r"(?i)buyer notes|catatan pembeli", sku):
+                sku = re.split(r"(?i)(?:buyer notes|catatan pembeli)[:\s]*", sku)[0].strip()
+
             # Clean any spillover Location/Slot words if present
             sku_cleaned = re.sub(r"(?i)\b(default\s*slot|unassigned\s*stock|default|unassigned|slot|stock)\b", "", sku)
             sku_cleaned = sku_cleaned.replace("\n", "").strip()
@@ -137,7 +153,7 @@ def clean_data(df_raw):
             current["Qty"] = qty_clean
 
             final_nama = " ".join(current["Nama Produk"].split())
-            current["Nama Produk"] = final_nama[:200]
+            current["Nama Produk"] = final_nama[:90]
 
             if current["SKU"]:
                 records.append(current.copy())
