@@ -130,7 +130,13 @@ process()
 
       proc.on("close", (code: number | null) => {
         if (code === 0) {
-          resolve(stdout.trim());
+          const jsonStart = stdout.indexOf("{");
+          const jsonEnd = stdout.lastIndexOf("}");
+          if (jsonStart !== -1 && jsonEnd !== -1) {
+            resolve(stdout.slice(jsonStart, jsonEnd + 1));
+          } else {
+            resolve(stdout.trim());
+          }
         } else {
           reject(new Error(`Python exited with code ${code}: ${stderr}`));
         }

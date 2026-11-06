@@ -2,23 +2,63 @@ import pdfplumber
 import pandas as pd
 import re
 
-def extract_and_process_pdf(pdf_path):
-    print("Memulai metode 'Grid' untuk ekstraksi data raw...")
+def get_column_boundaries(page, fallback_boundaries=None):
+    """
+    Dynamically detect column boundaries based on header coordinates.
+    Mekari Desty picking list has headers: 'Nama Produk', 'SKU', 'Location' (or 'Slot'), 'Qty'.
+    Columns are left-aligned with their header labels.
+    """
+    words = page.extract_words()
+    # Find table header word 'SKU' (typically top < 150)
+    sku_headers = [w for w in words if w['text'].upper() == 'SKU' and w['top'] < 150]
 
-    KOLOM_BOUNDARIES = [(0, 350), (350, 470), (470, 540), (540, 595)]
+    if sku_headers:
+        sku_h = sku_headers[0]
+        # Match other headers on the same horizontal line (within 5 points of SKU header top)
+        line_words = [w for w in words if abs(w['top'] - sku_h['top']) < 5]
+
+        loc_words = [w for w in line_words if w['text'].lower() in ['location', 'slot']]
+        qty_words = [w for w in line_words if w['text'].lower() in ['qty', 'kuantitas', 'jumlah']]
+
+        if loc_words and qty_words:
+            sku_x0 = sku_h['x0']
+            loc_x0 = loc_words[0]['x0']
+            qty_x0 = qty_words[0]['x0']
+
+            # Place boundaries slightly before each header x0 (2px margin)
+            b0 = (0, sku_x0 - 2)
+            b1 = (sku_x0 - 2, loc_x0 - 2)
+            b2 = (loc_x0 - 2, qty_x0 - 2)
+            b3 = (qty_x0 - 2, page.width)
+            return [b0, b1, b2, b3]
+
+    if fallback_boundaries:
+        return fallback_boundaries
+
+    # Fallback heuristic if headers not found on this page
+    top_words = [w['text'].lower() for w in words if w['top'] < 150]
+    if 'location' in top_words:
+        return [(0, 339), (339, 425), (425, 545), (545, page.width)]
+    elif 'slot' in top_words:
+        return [(0, 360), (360, 451), (451, 542), (542, page.width)]
+
+    return [(0, 339), (339, 425), (425, 545), (545, page.width)]
+
+
+def extract_and_process_pdf(pdf_path):
     all_rows_structured = []
+    last_boundaries = None
 
     with pdfplumber.open(pdf_path) as pdf:
         for page_num, page in enumerate(pdf.pages):
-            current_boundaries = list(KOLOM_BOUNDARIES)
-            if page.width != 595:
-                current_boundaries[-1] = (540, page.width)
+            boundaries = get_column_boundaries(page, fallback_boundaries=last_boundaries)
+            last_boundaries = boundaries
 
             h_lines = sorted(set([edge["top"] for edge in page.horizontal_edges] + [0, page.height]))
 
             for top, bottom in zip(h_lines[:-1], h_lines[1:]):
                 row_data = []
-                for x0, x1 in current_boundaries:
+                for x0, x1 in boundaries:
                     cell_crop = page.crop((x0, top, x1, bottom))
                     text = cell_crop.extract_text(x_tolerance=2, y_tolerance=2)
                     row_data.append(text.strip() if text else "")
@@ -35,8 +75,6 @@ def extract_and_process_pdf(pdf_path):
 
 
 def clean_data(df_raw):
-    print("Pembersihan data...")
-
     junk_rows_strict = [
         "Jumlah Pesanan", "Jumlah produk", "Picking List",
         "Halaman:", "Dicetak Oleh", "Tanggal Cetak", 
@@ -85,10 +123,12 @@ def clean_data(df_raw):
                     current["Varian"] = extracted_varian
                 current["Nama Produk"] = re.sub(regex_varian, "", current["Nama Produk"]).strip()
 
-            sku_cleaned = re.sub(r"(?i)defa\w*", "", sku)
+            # Clean any spillover Location/Slot words if present
+            sku_cleaned = re.sub(r"(?i)\b(default\s*slot|unassigned\s*stock|default|unassigned|slot|stock)\b", "", sku)
             sku_cleaned = sku_cleaned.replace("\n", "").strip()
-            sku_cleaned = re.sub(r"^.\s", "", sku_cleaned)[:25] 
-            sku_cleaned = re.sub(r"[a-z]", "", sku_cleaned)
+            # Remove leading bullet points or symbols
+            sku_cleaned = re.sub(r"^[^\w\s]\s*", "", sku_cleaned)
+            # Remove stray commas and periods
             sku_cleaned = sku_cleaned.replace(",", "").replace(".", "").strip()
 
             qty_clean = int(qty_match.group(0))
@@ -97,7 +137,7 @@ def clean_data(df_raw):
             current["Qty"] = qty_clean
 
             final_nama = " ".join(current["Nama Produk"].split())
-            current["Nama Produk"] = final_nama[:90]
+            current["Nama Produk"] = final_nama[:200]
 
             if current["SKU"]:
                 records.append(current.copy())
@@ -120,7 +160,3 @@ def main(file_path):
     raw_data_df = extract_and_process_pdf(file_path)
     cleaned_data = clean_data(raw_data_df)
     return cleaned_data
-
-
-
-
